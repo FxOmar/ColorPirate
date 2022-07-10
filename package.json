@@ -1,0 +1,32 @@
+{
+  "name": "color-pirate",
+  "version": "1.0.0",
+  "description": "",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/colorPirate.umd.js",
+  "module": "./dist/colorPirate.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/colorPirate.es.js",
+      "require": "./dist/colorPirate.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "Omar Chadidi",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "vite": "^2.9.9"
+  },
+  "dependencies": {
+    "quantize": "^1.0.2"
+  }
+}
