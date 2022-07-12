@@ -6,15 +6,12 @@ import * as quantize from "quantize";
  * Image Color palette generator.
  *
  * @param {string} imagePath
- * @param paletteSize Number of colors to be used in the quantization
  */
 export default class colorPirate {
   protected imageURL: string;
-  protected paletteSize: number = 6;
 
-  constructor(imageURL: string, paletteSize: number = 6) {
+  constructor(imageURL: string) {
     this.imageURL = imageURL;
-    this.paletteSize = paletteSize;
   }
 
   /**
@@ -81,14 +78,19 @@ export default class colorPirate {
   ) {
     const pixelArray = [];
 
-    for (let i = 0, offset; i < pixelCount; i = i + quality) {
+    const data = imageData.data;
+
+    let i = pixelCount,
+      offset;
+
+    while ((i = i - quality)) {
       offset = i * 4;
 
       const pixel = [
-        imageData.data[offset + 0],
-        imageData.data[offset + 1],
-        imageData.data[offset + 2],
-        imageData.data[offset + 3],
+        data[offset + 0], // red
+        data[offset + 1], // green
+        data[offset + 2], // blue
+        data[offset + 3], // alpha
       ];
 
       // If pixel is mostly opaque and not white
@@ -116,7 +118,7 @@ export default class colorPirate {
       return this.createPixelArray(
         imageCanvas,
         imageCanvas.width * imageCanvas.height,
-        5
+        10
       );
     }
 
@@ -126,24 +128,58 @@ export default class colorPirate {
   /**
    * Generate a color palette from the image.
    *
-   * @returns {Array<Number>}
+   * @param paletteSize Number of colors to be used in the quantization
+   * @returns {Promise<Array<Number[]>>}
+   *
    * @memberof ImageColorPicker
    *
-   * @example new ImageColorPicker("https://example.com/image.jpg").getPalette();
+   * @example new ImageColorPicker().getPalette("https://example.com/image.jpg", 2, 20);
    **/
-  public getPalette() {
-    return this.getImageData()
-      .then((data) => {
-        if (data) {
-          const palette = quantize(data, this.paletteSize);
-          const paletteColors = palette.palette();
+  public async getPalette(
+    paletteSize: Number = 6
+  ): Promise<Array<Number[]> | undefined> {
+    if (paletteSize <= 1) {
+      throw new Error("Palette size must be greater than 1.");
+    }
 
-          return paletteColors;
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        throw new Error("Could not create palette. Something went wrong.");
-      });
+    try {
+      const data = await this.getImageData();
+
+      if (data) {
+        const palette = quantize(data, paletteSize);
+        const paletteColors = palette.palette();
+
+        return paletteColors;
+      }
+    } catch (err) {
+      console.error(err);
+      throw new Error("Could not create palette. Something went wrong.");
+    }
+  }
+
+  /**
+   * Get the dominant color from the image.
+   *
+   * @returns {Promise<Array<Number>>}
+   *
+   * @memberof ImageColorPicker
+   *
+   * @example new ImageColorPicker("https://example.com/image.jpg").getColor();
+   * @throws {Error} If the image could not be loaded.
+   **/
+  public async getColor(): Promise<Array<Number> | undefined> {
+    try {
+      const paletteColors = await this.getPalette(2);
+
+      // check paletteColors is an array.
+      if (Array.isArray(paletteColors)) {
+        const dominantColor = paletteColors[0];
+
+        return dominantColor;
+      }
+    } catch (err) {
+      console.error(err);
+      throw new Error("Could not create palette. Something went wrong.");
+    }
   }
 }

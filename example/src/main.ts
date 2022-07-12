@@ -11,16 +11,21 @@ const paletteContainer = document.getElementById(
   "palette-container"
 ) as HTMLDivElement;
 
+function createHolder(colors: string[]) {
+  const div = document.createElement("div");
+  div.style.backgroundColor = `rgb(${colors[0]}, ${colors[1]}, ${colors[2]})`;
+  div.className = "palette";
+  paletteContainer.appendChild(div);
+}
+
 document.getElementById("submit-image")?.addEventListener("click", async () => {
   imageContainer.style.backgroundImage = `url(${imageURL.value})`;
 
-  const colorPalette = await new colorPirate(imageURL.value, 7).getPalette();
+  const color_pirate = new colorPirate(imageURL.value);
+  const colors = await color_pirate.getPalette(1);
 
   // Render the palette.
-  colorPalette?.forEach((color: any) => {
-    const div = document.createElement("div");
-    div.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-    div.className = "palette";
-    paletteContainer.appendChild(div);
+  colors?.forEach((color: any) => {
+    createHolder(color);
   });
 });
