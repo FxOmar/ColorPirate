@@ -1,6 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import * as quantize from "quantize";
+import * as quantize_ from "quantize";
+
+const quantize = quantize_;
 
 /**
  * Image Color palette generator.
@@ -24,13 +25,9 @@ export default class colorPirate {
   private loadImage(imageURL: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const image = new Image();
-
       image.crossOrigin = "anonymous";
-
       image.onload = () => resolve(image);
-
       image.onerror = () => reject(new Error("Could not load image"));
-
       image.src = imageURL;
     });
   }
@@ -44,21 +41,22 @@ export default class colorPirate {
    *
    * @throws {Error} If the image could not be loaded.
    **/
-  private async createImageCanvas() {
-    const image = await this.loadImage(this.imageURL);
+  private async createImageCanvas(): Promise<ImageData | null> {
+    const imageData: HTMLImageElement = await this.loadImage(this.imageURL);
 
-    const canvas = document.createElement("canvas");
+    if (imageData) {
+      const canvas = document.createElement("canvas");
 
-    const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d");
 
-    canvas.width = image.width;
-    canvas.height = image.height;
+      canvas.width = imageData.width;
+      canvas.height = imageData.height;
 
-    if (ctx) {
-      ctx.drawImage(image, 0, 0);
-      return ctx.getImageData(0, 0, image.width, image.height);
+      if (ctx) {
+        ctx.drawImage(imageData, 0, 0);
+        return ctx.getImageData(0, 0, imageData.width, imageData.height);
+      }
     }
-
     throw new Error("Could not create image canvas.");
   }
 
@@ -69,12 +67,12 @@ export default class colorPirate {
    * @param {number} pixelCount
    * @param {number} quality
    *
-   * @returns {ImageData}
+   * @returns {Array<Number[]>}
    **/
   private createPixelArray(
     imageData: Uint8ClampedArray,
     pixelCount: number,
-    quality: number = 10
+    quality: number
   ) {
     const pixelArray = new Array().fill(0);
 
@@ -86,7 +84,7 @@ export default class colorPirate {
       // If pixel is mostly opaque and not white
       if (typeof pixel[3] === "undefined" || pixel[3] >= 125) {
         if (!(pixel[0] > 250 && pixel[1] > 250 && pixel[2] > 250)) {
-          pixelArray.push(pixel);
+          pixelArray[pixelArray.length] = pixel;
         }
       }
     }
@@ -97,27 +95,32 @@ export default class colorPirate {
   /**
    * Get image pixels data.
    *
-   * @returns {Array<Number>} Array of pixels data.
+   * @param {number} quality Quality of colors to return.
+   *
+   * @returns {Promise<Array<Number[]>>} Array of pixels data.
    *
    * @memberof ImageColorPicker
+   *
+   * @throws {Error} If the image could not be loaded.
    **/
-  private async getImageData() {
-    const imageCanvas: ImageData | null = await this.createImageCanvas();
+  private async getImageData(quality: number): Promise<Array<Number[]> | null> {
+    const imageCanvas = await this.createImageCanvas();
 
     if (imageCanvas) {
       return this.createPixelArray(
         imageCanvas.data,
         imageCanvas.width * imageCanvas.height,
-        20
+        quality
       );
     }
 
-    throw new Error("Could not create image canvas.");
+    throw new Error("Could not create image data.");
   }
 
   /**
    * Generate a color palette from the image.
    *
+   * @param {number} quality Quality of colors to return.
    * @param paletteSize Number of colors to be used in the quantization
    * @returns {Promise<Array<Number[]>>}
    *
@@ -126,18 +129,19 @@ export default class colorPirate {
    * @example new ImageColorPicker().getPalette("https://example.com/image.jpg", 2, 20);
    **/
   public async getPalette(
-    paletteSize: Number = 6
+    paletteSize: Number = 6,
+    quality: number = 20
   ): Promise<Array<Number[]> | undefined> {
     if (paletteSize <= 1) {
       throw new Error("Palette size must be greater than 1.");
     }
 
     try {
-      // debugger;
-      const data = await this.getImageData();
+      let data = await this.getImageData(quality);
 
       if (data) {
         const palette = quantize(data, paletteSize);
+
         const paletteColors = palette.palette();
 
         return paletteColors;
@@ -151,16 +155,21 @@ export default class colorPirate {
   /**
    * Get the dominant color from the image.
    *
+   * @param {number} quality Quality of colors to return.
+   *
    * @returns {Promise<Array<Number>>}
    *
    * @memberof ImageColorPicker
    *
    * @example new ImageColorPicker("https://example.com/image.jpg").getColor();
+   *
    * @throws {Error} If the image could not be loaded.
    **/
-  public async getColor(): Promise<Array<Number> | undefined> {
+  public async getColor(
+    quality: number = 20
+  ): Promise<Array<Number> | undefined> {
     try {
-      const paletteColors = await this.getPalette(2);
+      const paletteColors = await this.getPalette(3, quality);
 
       // check paletteColors is an array.
       if (Array.isArray(paletteColors)) {
