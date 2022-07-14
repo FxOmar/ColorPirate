@@ -21,8 +21,11 @@ function createHolder(colors: string[]) {
 document.getElementById("submit-image")?.addEventListener("click", async () => {
   imageContainer.style.backgroundImage = `url(${imageURL.value})`;
 
+  const start = performance.now();
   const color_pirate = new colorPirate(imageURL.value);
-  const colors = await color_pirate.getPalette(1);
+  const colors = await color_pirate.getPalette(4);
+  const end = performance.now();
+  console.log(`Took ${end - start} ms`);
 
   // Render the palette.
   colors?.forEach((color: any) => {

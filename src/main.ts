@@ -72,26 +72,16 @@ export default class colorPirate {
    * @returns {ImageData}
    **/
   private createPixelArray(
-    imageData: ImageData,
+    imageData: Uint8ClampedArray,
     pixelCount: number,
-    quality: number = 1
+    quality: number = 10
   ) {
-    const pixelArray = [];
+    const pixelArray = new Array().fill(0);
 
-    const data = imageData.data;
-
-    let i = pixelCount,
-      offset;
-
-    while ((i = i - quality)) {
-      offset = i * 4;
-
-      const pixel = [
-        data[offset + 0], // red
-        data[offset + 1], // green
-        data[offset + 2], // blue
-        data[offset + 3], // alpha
-      ];
+    // Loop through pixels and add it to the array.
+    for (let i = 0; i < pixelCount; i += quality) {
+      // Get the pixel data.
+      const pixel = imageData.slice(i * 4, (i + 1) * 4);
 
       // If pixel is mostly opaque and not white
       if (typeof pixel[3] === "undefined" || pixel[3] >= 125) {
@@ -116,9 +106,9 @@ export default class colorPirate {
 
     if (imageCanvas) {
       return this.createPixelArray(
-        imageCanvas,
+        imageCanvas.data,
         imageCanvas.width * imageCanvas.height,
-        10
+        20
       );
     }
 
@@ -143,6 +133,7 @@ export default class colorPirate {
     }
 
     try {
+      // debugger;
       const data = await this.getImageData();
 
       if (data) {
